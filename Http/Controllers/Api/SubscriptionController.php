@@ -108,24 +108,24 @@ class SubscriptionController extends BaseApiController
       $data = $request->input('attributes');
       $params = $this->getParamsRequest($request);
       $params->include = ['category', 'limits'];
-      
+
       // Get Plan
       $plan = $this->plan->getItem($data['plan_id'], $params);
 
       // Validate plan exist
       if(empty($plan) || is_null($plan)){
         \Log::info(trans('iplan::plans.messages.plan not found'));
-        throw new \Exception(trans('iplan::plans.messages.plan not found'), 400); 
+        throw new \Exception(trans('iplan::plans.messages.plan not found'), 400);
       }
 
       // Data to save in Subscription
       $startDate = ($plan->trial>0) ? Carbon::now()->addDays($plan->trial) : Carbon::now();
-      
+
       $totalDays = $plan->trial+$plan->frequency_id;
       $endDate =  Carbon::now()->addDays($totalDays);
-      
+
       //$endDate = Carbon::now()->addDays($plan->frequency_id);
-     
+
       $subscriptionData = [
         'name' => $plan->name,
         'description' => $plan->description,
@@ -144,18 +144,18 @@ class SubscriptionController extends BaseApiController
 
         // User has another subscription
         if(!is_null($oldSubscription)){
-          
+
           //Update old subscription
           $entity = $this->subscription->updateBy($oldSubscription->id,$data);
 
           // Cumulative Plans
           $cumulative = setting('iplan::cumulativePlans',null, true);
-          
+
           //Plans are not cumulative
           if($cumulative==false){
-            
+
             foreach ($oldSubscription->limits as $key => $limit) {
-              
+
               //The old limit should be inactive only if type is Principal (Like the plan)
               // the limits type 1 (Extra) should be actives
               if($limit->type==0){
@@ -205,7 +205,7 @@ class SubscriptionController extends BaseApiController
 
       //Important to get reedirect url
       $resultEvent = event(new SubscriptionHasStarted($entity));
-      
+
       //Response
       $response = ["data" => $entity, "resultEvent" => $resultEvent];
       \DB::commit(); //Commit to Data Base
@@ -371,7 +371,7 @@ class SubscriptionController extends BaseApiController
         $user = \Auth::user();
         //Create subscription
         if (!isset($plan->product) || !$plan->product->price || $plan->trial>0) {
-          
+
           \Log::info("Iplan:: Buy|Create Subscription");
 
           $suscriptionCreated = $this->create(new Request([
@@ -400,7 +400,7 @@ class SubscriptionController extends BaseApiController
           }else{
             \Log::info("Iplan:: Buy|ValidationTrial|Trial is 0");
           }
-            
+
 
         } //Create cart to pay
         else {
@@ -422,7 +422,6 @@ class SubscriptionController extends BaseApiController
       \DB::rollback();//Rollback to Data Base
       $status = $this->getStatusError($e->getCode());
       $response = ["errors" => $e->getMessage()];
-      dd($response, $e->getLine(), $e->getFile());
     }
     //Return response
     return response()->json($response, $status ?? 200);
